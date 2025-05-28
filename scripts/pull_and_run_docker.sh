@@ -2,9 +2,12 @@
 
 # Fetch ECR details from Parameter Store
 echo "Fetching deployment parameters from SSM..."
-ACCOUNT_ID=$(aws ssm get-parameter --name "/httpd-app/ecr/account-id" --with-decryption --query "Parameter.Value" --output text)
-REGION=$(aws ssm get-parameter --name "/httpd-app/ecr/region" --with-decryption --query "Parameter.Value" --output text)
-REPO_NAME=$(aws ssm get-parameter --name "/httpd-app/ecr/repo-name" --with-decryption --query "Parameter.Value" --output text)
+'export ACCOUNT_ID=$(aws ssm get-parameter --name "/httpd-app/ecr/account-id" --with-decryption --query "Parameter.Value" --output text)'
+'export REGION=$(aws ssm get-parameter --name "/httpd-app/ecr/region" --with-decryption --query "Parameter.Value" --output text)'
+'export REPO_NAME=$(aws ssm get-parameter --name "/httpd-app/ecr/repo-name" --with-decryption --query "Parameter.Value" --output text)'
+#ACCOUNT_ID=$(aws ssm get-parameter --name "/httpd-app/ecr/account-id" --with-decryption --query "Parameter.Value" --output text)
+#REGION=$(aws ssm get-parameter --name "/httpd-app/ecr/region" --with-decryption --query "Parameter.Value" --output text)
+#REPO_NAME=$(aws ssm get-parameter --name "/httpd-app/ecr/repo-name" --with-decryption --query "Parameter.Value" --output text)
 
 # Construct the Docker image URI
 DOCKER_IMAGE_NAME="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${REPO_NAME}:latest"
