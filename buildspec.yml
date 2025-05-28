@@ -3,52 +3,66 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
+      - echo "Logging in to Amazon ECR..."
       - aws --version
 
+      # IMPORTANT FIX: Convert script line endings from Windows (CRLF) to Unix (LF)
+      # This resolves the "bad interpreter: No such file or directory" error (due to ^M)
+      - echo "Converting script line endings from CRLF to LF for all shell scripts..."
+      - find scripts/ -type f -exec sed -i 's/\r$//' {} +
+      - echo "Line ending conversion complete."
+
       # Fetching parameters from AWS SSM Parameter Store
-      - echo Fetching ECR account ID from Parameter Store...
-      - 'export ACCOUNT_ID=$(aws ssm get-parameter --name "/httpd-app/ecr/account-id" --with-decryption --query "Parameter.Value" --output text)'
+      - echo "Fetching ECR account ID from Parameter Store..."
+      - export ACCOUNT_ID=$(aws ssm get-parameter --name "/httpd-app/ecr/account-id" --with-decryption --query "Parameter.Value" --output text)
       
-      - echo Fetching ECR region from Parameter Store...
-      - 'export REGION=$(aws ssm get-parameter --name "/httpd-app/ecr/region" --with-decryption --query "Parameter.Value" --output text)'
+      - echo "Fetching ECR region from Parameter Store..."
+      - export REGION=$(aws ssm get-parameter --name "/httpd-app/ecr/region" --with-decryption --query "Parameter.Value" --output text)
 
-      - echo Fetching ECR repo name from Parameter Store...
-      - 'export REPO_NAME=$(aws ssm get-parameter --name "/httpd-app/ecr/repo-name" --with-decryption --query "Parameter.Value" --output text)'
+      - echo "Fetching ECR repo name from Parameter Store..."
+      - export REPO_NAME=$(aws ssm get-parameter --name "/httpd-app/ecr/repo-name" --with-decryption --query "Parameter.Value" --output text)
 
-      - 'export REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME'
-      - 'export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)'
+      # Construct the full ECR repository URI and image tag
+      - export REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME
+      - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7) # Uses a short commit hash
 
-      - 'echo "REPOSITORY_URI: $REPOSITORY_URI"'
-      - 'echo "IMAGE_TAG: $IMAGE_TAG"'
+      - echo "REPOSITORY_URI: $REPOSITORY_URI"
+      - echo "IMAGE_TAG: $IMAGE_TAG"
 
-      # ECR Login
-      - 'aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REPOSITORY_URI'
+      # ECR Login using Docker CLI
+      - echo "Logging in to ECR..."
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
 
   build:
     commands:
-      - echo Build started on `date`
-      - echo Building the Docker image...
+      - echo "Build started on $(date)"
+      - echo "Building the Docker image..."
+      # Build and tag the image with 'latest'
       - docker build -t $REPOSITORY_URI:latest .
+      # Tag the image with the specific commit hash
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
 
   post_build:
     commands:
-      - echo Build completed on `date`
-      - echo Pushing the Docker images...
+      - echo "Build completed on $(date)"
+      - echo "Pushing the Docker images to ECR..."
+      # Push both 'latest' and commit-hash tagged images
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
 
-      - echo Writing image definitions file...
+      - echo "Writing image definitions file (for CodeDeploy/ECS)..."
+      # Creates imagedefinitions.json which CodeDeploy uses for ECS deployments
       - printf '[{"name":"httpd-app","imageUri":"%s"}]' "$REPOSITORY_URI:latest" > imagedefinitions.json
 
-      - echo Updating appspec.yml with ECR URI...
-      - sed -i "s|$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:latest|$REPOSITORY_URI:latest|g" appspec.yml
-      - cat appspec.yml
+      - echo "Updating appspec.yml with ECR URI..."
+      # Replaces a placeholder in appspec.yml with the actual ECR image URI
+      # This assumes appspec.yml might have a placeholder for the ECR URI
+      - sed -i "s|PLACEHOLDER_ECR_URI|$REPOSITORY_URI:latest|g" appspec.yml # <<< IMPORTANT: Adjust 'PLACEHOLDER_ECR_URI' to match your appspec.yml's actual placeholder
+      - cat appspec.yml # Print updated appspec.yml for verification
 
 artifacts:
   files:
-    - appspec.yml
-    - scripts/**/*
-  discard-paths: no
-  packaging: ZIP
+    - appspec.yml        # The modified appspec.yml for CodeDeploy
+    - scripts/**/* # All scripts needed for CodeDeploy lifecycle hooks
+  discard-paths: no      # Preserve directory structure of artifacts
+  packaging: ZIP         # Package artifacts into a ZIP file
