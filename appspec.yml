@@ -1,0 +1,20 @@
+# appspec.yml
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /opt/codedeploy-agent/httpd-app/
+hooks:
+  BeforeInstall:
+    - location: scripts/install_docker.sh
+      timeout: 300
+      runas: root
+  AfterInstall:
+    - location: scripts/pull_and_run_docker.sh
+      timeout: 600
+      runas: root
+  ApplicationStop:
+    - location: scripts/stop_docker.sh
+      timeout: 60
+      runas: root
+      continueOnError: true
