@@ -46,6 +46,7 @@ phases:
       - echo "Updating appspec.yml with ECR URI..."
       - >
         sed -i "s|$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:latest|$REPOSITORY_URI:latest|g" appspec.yml
+
       - cat appspec.yml
 
 artifacts:
