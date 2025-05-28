@@ -7,13 +7,13 @@ phases:
       - aws --version
 
       # Fetching parameters from AWS SSM Parameter Store
-      - echo Fetching ECR account ID from Parameter Store...
+      - echo 'Fetching ECR account ID from Parameter Store...'
       - export ACCOUNT_ID=$(aws ssm get-parameter --name "/httpd-app/ecr/account-id" --with-decryption --query "Parameter.Value" --output text)
       
-      - echo Fetching ECR region from Parameter Store...
+      - echo 'Fetching ECR region from Parameter Store...'
       - export REGION=$(aws ssm get-parameter --name "/httpd-app/ecr/region" --with-decryption --query "Parameter.Value" --output text)
 
-      - echo Fetching ECR repo name from Parameter Store...
+      - echo 'Fetching ECR repo name from Parameter Store...'
       - export REPO_NAME=$(aws ssm get-parameter --name "/httpd-app/ecr/repo-name" --with-decryption --query "Parameter.Value" --output text)
 
       - export REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME
@@ -40,10 +40,12 @@ phases:
       - docker push $REPOSITORY_URI:$IMAGE_TAG
 
       - echo "Writing image definitions file..."
-      - printf '[{"name":"httpd-app","imageUri":"%s"}]' "$REPOSITORY_URI:latest" > imagedefinitions.json
+      - >
+        printf '[{"name":"httpd-app","imageUri":"%s"}]' "$REPOSITORY_URI:latest" > imagedefinitions.json
 
       - echo "Updating appspec.yml with ECR URI..."
-      - sed -i "s|$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:latest|$REPOSITORY_URI:latest|g" appspec.yml
+      - >
+        sed -i "s|$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:latest|$REPOSITORY_URI:latest|g" appspec.yml
       - cat appspec.yml
 
 artifacts:
@@ -52,5 +54,3 @@ artifacts:
     - scripts/**/*
   discard-paths: no
   packaging: ZIP
-
-
