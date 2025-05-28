@@ -26,12 +26,12 @@ phases:
       - 'export REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME'
       - 'export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)' # Uses a short commit hash
 
-      - echo "REPOSITORY_URI: $REPOSITORY_URI"
-      - echo "IMAGE_TAG: $IMAGE_TAG"
+      - 'echo "REPOSITORY_URI: $REPOSITORY_URI"'
+      - 'echo "IMAGE_TAG: $IMAGE_TAG"'
 
       # ECR Login using Docker CLI
       - echo "Logging in to ECR..."
-      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
+      - 'aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REPOSITORY_URI'
 
   build:
     commands:
