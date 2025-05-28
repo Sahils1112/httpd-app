@@ -14,17 +14,17 @@ phases:
 
       # Fetching parameters from AWS SSM Parameter Store
       - echo "Fetching ECR account ID from Parameter Store..."
-      - export ACCOUNT_ID=$(aws ssm get-parameter --name "/httpd-app/ecr/account-id" --with-decryption --query "Parameter.Value" --output text)
+      - 'export ACCOUNT_ID=$(aws ssm get-parameter --name "/httpd-app/ecr/account-id" --with-decryption --query "Parameter.Value" --output text)'
       
       - echo "Fetching ECR region from Parameter Store..."
-      - export REGION=$(aws ssm get-parameter --name "/httpd-app/ecr/region" --with-decryption --query "Parameter.Value" --output text)
+      - 'export REGION=$(aws ssm get-parameter --name "/httpd-app/ecr/region" --with-decryption --query "Parameter.Value" --output text)'
 
       - echo "Fetching ECR repo name from Parameter Store..."
-      - export REPO_NAME=$(aws ssm get-parameter --name "/httpd-app/ecr/repo-name" --with-decryption --query "Parameter.Value" --output text)
+      - 'export REPO_NAME=$(aws ssm get-parameter --name "/httpd-app/ecr/repo-name" --with-decryption --query "Parameter.Value" --output text)'
 
       # Construct the full ECR repository URI and image tag
-      - export REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME
-      - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7) # Uses a short commit hash
+      - 'export REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME'
+      - 'export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)' # Uses a short commit hash
 
       - echo "REPOSITORY_URI: $REPOSITORY_URI"
       - echo "IMAGE_TAG: $IMAGE_TAG"
